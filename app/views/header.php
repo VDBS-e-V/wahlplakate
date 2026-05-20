@@ -78,6 +78,7 @@
 			background: #0056b3;
 		}
 	</style>
+	<link rel="stylesheet" href="/css/wpl-ui.css">
 </head>
 <body>
 <?php foreach (\App\Inc\flash_get_all() as $msg): ?>
@@ -94,6 +95,7 @@
 			<a href="/admin/users.php">Benutzerverwaltung</a>
 		<?php endif; ?>
 		<?php if (\App\Inc\is_logged_in()): ?>
+			<a href="/images.php">Bilderliste</a>
 			<a href="/logout.php">Abmelden</a>
 		<?php else: ?>
 			<a href="/login.php">Anmelden</a>

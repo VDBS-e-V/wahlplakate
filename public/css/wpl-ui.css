@@ -1,0 +1,46 @@
+/* Wahlplakate UI helpers */
+:root{
+  --primary:#1167b1;
+  --primary-700:#0e5490;
+  --muted:#6b7b86;
+  --danger:#dc3545;
+  --card-bg:#fbfdff;
+}
+*{box-sizing:border-box}
+body{background:#f5f7fa;color:#223;}
+.container{padding:1.5rem;margin:0 auto}
+.nav a{margin-right:1rem;color:var(--primary)}
+
+/* Buttons */
+.btn{display:inline-block;padding:0.45rem 0.7rem;border-radius:6px;background:var(--primary);color:#fff;text-decoration:none;border:0;cursor:pointer;font-size:0.95rem}
+.btn:hover{background:var(--primary-700)}
+.btn:disabled{opacity:0.6;cursor:not-allowed}
+.btn-outline{background:#fff;color:var(--primary);border:1px solid rgba(17,103,177,0.18)}
+.btn-sm{padding:0.25rem 0.45rem;font-size:0.85rem;border-radius:5px}
+.btn-danger{background:var(--danger)}
+.btn-link{background:transparent;color:var(--primary);padding:0;border-radius:0}
+
+/* Search / filter panel adjustments (complements inline panel styles) */
+.search-panel{box-shadow:0 1px 6px rgba(17,103,177,0.03)}
+.search-field select, .search-field input{padding:0.5rem;border-radius:8px;border:1px solid #d1e3f0}
+
+/* Gallery */
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;align-items:start}
+.card{background:var(--card-bg);border:1px solid #e6eef6;padding:0.5rem;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow 160ms ease;border-left:4px solid rgba(17,103,177,0.06)}
+.card:hover{box-shadow:0 6px 18px rgba(17,103,177,0.06)}
+.card-link{display:block;overflow:hidden;border-radius:6px}
+.card-img{width:100%;height:160px;object-fit:cover;border-radius:6px;border:1px solid #e0e6eb}
+.card-body{margin-top:0.6rem;font-size:0.92rem;color:#223}
+.card-body .muted{color:var(--muted);font-size:0.9rem}
+.card-actions{margin-top:0.6rem;display:flex;gap:0.5rem}
+
+/* Image view */
+.image-controls{display:flex;gap:0.6rem;align-items:center;margin-bottom:1rem}
+.image-full{max-width:900px;margin-bottom:1rem}
+.image-full__img{width:100%;height:auto;display:block;border:1px solid #e6eef6;border-radius:8px}
+.image-meta{font-size:0.95rem;color:#333;margin-top:0.5rem}
+
+@media (max-width:640px){
+  .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+  .card-img{height:110px}
+}

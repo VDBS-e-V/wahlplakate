@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (\Throwable $e) {
         $pdo->rollBack();
         \App\Inc\flash_set('error', 'Delete failed: ' . $e->getMessage());
-        \App\Inc\redirect('image.php?id=' . $id);
+        \App\Inc\redirect('image_view.php?id=' . $id);
     }
 }
 
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <form method="post">
 	<?php echo \App\Inc\csrf_input(); ?>
 	<button type="submit">Confirm Delete</button>
-	<a href="image.php?id=<?php echo \App\Inc\h((string)$id); ?>">Cancel</a>
+    <a href="image_view.php?id=<?php echo \App\Inc\h((string)$id); ?>">Cancel</a>
 </form>
 <?php require_once __DIR__ . '/../app/views/footer.php'; ?>
 

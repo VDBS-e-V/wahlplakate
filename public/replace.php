@@ -15,7 +15,7 @@ if (empty($_GET['id']) || ! ctype_digit((string)$_GET['id'])) {
     exit;
 }
 $id = (int) $_GET['id'];
- $stmt = $pdo->prepare('SELECT id, uploaded_by, file_path FROM wpl_images WHERE id = ? LIMIT 1');
+ $stmt = $pdo->prepare('SELECT id, uploaded_by, file_path, election_id, election_party_id, election_candidate_id, locality_id FROM wpl_images WHERE id = ? LIMIT 1');
 $stmt->execute([$id]);
 $img = $stmt->fetch();
 if (! $img) {
@@ -50,7 +50,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new \RuntimeException('Duplicate image exists with id ' . $existing);
         }
 
-        $stored = \App\Inc\store_upload($validated);
+        // gather labels from existing image row to use in new filename
+        $electionName = $pdo->prepare('SELECT name FROM wpl_elections WHERE id = ? LIMIT 1');
+        $electionName->execute([$img['election_id']]);
+        $electionName = $electionName->fetchColumn() ?: '';
+
+        $localityName = $pdo->prepare('SELECT name FROM wpl_localities WHERE id = ? LIMIT 1');
+        $localityName->execute([$img['locality_id']]);
+        $localityName = $localityName->fetchColumn() ?: '';
+
+        $partyName = '';
+        $partyStmt = $pdo->prepare('SELECT ep.ballot_label, p.name as party_name FROM wpl_election_parties ep LEFT JOIN wpl_parties p ON ep.party_id = p.id WHERE ep.id = ? LIMIT 1');
+        $partyStmt->execute([$img['election_party_id']]);
+        $partyRow = $partyStmt->fetch();
+        if ($partyRow) {
+            $partyName = $partyRow['ballot_label'] ?? $partyRow['party_name'] ?? '';
+        }
+
+        $candidateName = '';
+        if (! empty($img['election_candidate_id'])) {
+            $cStmt = $pdo->prepare('SELECT name FROM wpl_election_candidates WHERE id = ? LIMIT 1');
+            $cStmt->execute([$img['election_candidate_id']]);
+            $candidateName = $cStmt->fetchColumn() ?: '';
+        }
+
+        $meta = [
+            'election' => $electionName,
+            'locality' => $localityName,
+            'party' => $partyName,
+            'candidate' => $candidateName,
+        ];
+
+        $stored = \App\Inc\store_upload($validated, $meta);
 
         $upd = $pdo->prepare('UPDATE wpl_images SET file_path = ?, original_filename = ?, mime = ?, size_bytes = ?, sha256 = ? WHERE id = ?');
         $upd->execute([$stored['file_path'], $_FILES['image']['name'], $validated['mime'], $validated['size_bytes'], $validated['sha256'], $id]);
@@ -59,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         \App\Inc\delete_stored_file($img['file_path']);
 
         \App\Inc\flash_set('success', 'Image replaced successfully!');
-        \App\Inc\redirect('image.php?id=' . $id);
+        \App\Inc\redirect('image_view.php?id=' . $id);
     } catch (\Throwable $e) {
         \App\Inc\flash_set('error', 'Replace failed: ' . $e->getMessage());
         \App\Inc\redirect('replace.php?id=' . $id);

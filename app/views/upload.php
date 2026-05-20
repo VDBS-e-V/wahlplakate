@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/../../app/inc/csrf.php';
 require_once __DIR__ . '/../../app/inc/util.php';
@@ -25,7 +26,7 @@ require_once __DIR__ . '/../../app/views/header.php';
         </label>
         <label style="margin-left:1rem;"><input type="checkbox" name="save_default" value="1"> Als Standard speichern</label>
         <br><br>
-        <button type="submit">Weiter</button>
+        <button class="btn" type="submit">Weiter</button>
     </form>
 <?php elseif ($step === 2): ?>
     <?php
@@ -46,8 +47,8 @@ require_once __DIR__ . '/../../app/views/header.php';
             </select>
         </label>
         <br><br>
-        <a href="upload.php?step=1&change_election=1">Wahl ändern</a>
-        <button type="submit" style="margin-left:1rem;">Weiter</button>
+        <a class="btn-link" href="upload.php?step=1&change_election=1">Wahl ändern</a>
+        <button class="btn" type="submit" style="margin-left:1rem;">Weiter</button>
     </form>
 <?php elseif ($step === 3): ?>
     <?php
@@ -69,8 +70,8 @@ require_once __DIR__ . '/../../app/views/header.php';
             </select>
         </label>
         <br><br>
-        <a href="upload.php?step=2">Zurück</a>
-        <button type="submit" style="margin-left:1rem;">Weiter</button>
+        <a class="btn-link" href="upload.php?step=2">Zurück</a>
+        <button class="btn" type="submit" style="margin-left:1rem;">Weiter</button>
     </form>
 <?php elseif ($step === 4): ?>
     <?php
@@ -79,21 +80,52 @@ require_once __DIR__ . '/../../app/views/header.php';
     $stmt->execute([$electionId]);
     $electionParties = $stmt->fetchAll();
     ?>
-    <form method="post">
+    <form method="post" id="step4form">
         <?php echo \App\Inc\csrf_input(); ?>
         <input type="hidden" name="step" value="4">
         <label>Partei
-            <select name="election_party_id" required>
-                <option value="">-- bitte wählen --</option>
+            <?php
+                $selectedPartyLabel = '';
+                $selectedPartyId = isset($flow['election_party_id']) ? (int) $flow['election_party_id'] : 0;
+                foreach ($electionParties as $p) {
+                    if ($selectedPartyId && (int)$p['id'] === $selectedPartyId) {
+                        $selectedPartyLabel = $p['label'] . ' / ' . $p['code'];
+                        break;
+                    }
+                }
+            ?>
+            <input list="election_parties_list" id="election_party_input" name="election_party_input" required value="<?php echo \App\Inc\h($selectedPartyLabel); ?>" placeholder="Wähle oder tippe eine Partei">
+            <datalist id="election_parties_list">
                 <?php foreach ($electionParties as $p): ?>
-                    <option value="<?php echo (int) $p['id']; ?>" <?php echo isset($flow['election_party_id']) && (int) $flow['election_party_id'] === (int) $p['id'] ? 'selected' : ''; ?>><?php echo \App\Inc\h($p['label']); ?> (<?php echo \App\Inc\h($p['code']); ?>)</option>
+                    <option data-id="<?php echo (int) $p['id']; ?>" value="<?php echo \App\Inc\h($p['label'] . ' / ' . $p['code']); ?>"></option>
                 <?php endforeach; ?>
-            </select>
+            </datalist>
+            <input type="hidden" name="election_party_id" id="election_party_id" value="<?php echo $selectedPartyId ? (int)$selectedPartyId : ''; ?>">
         </label>
         <br><br>
-        <a href="upload.php?step=3">Zurück</a>
-        <button type="submit" style="margin-left:1rem;">Weiter</button>
+        <a class="btn-link" href="upload.php?step=3">Zurück</a>
+        <button class="btn" type="submit" style="margin-left:1rem;">Weiter</button>
     </form>
+    <script>
+    (function(){
+        const list = document.getElementById('election_parties_list');
+        const input = document.getElementById('election_party_input');
+        const hidden = document.getElementById('election_party_id');
+        if (!input || !list || !hidden) return;
+        // map values to ids
+        const options = Array.from(list.options || []);
+        function sync() {
+            hidden.value = '';
+            const v = input.value || '';
+            for (const opt of options) {
+                if (opt.value === v) { hidden.value = opt.dataset.id || ''; break; }
+            }
+        }
+        input.addEventListener('input', sync);
+        // ensure sync before submit
+        document.getElementById('step4form').addEventListener('submit', sync);
+    })();
+    </script>
 <?php elseif ($step === 5): ?>
     <?php
     $pdo = \App\Core\Database::pdo();
@@ -101,21 +133,50 @@ require_once __DIR__ . '/../../app/views/header.php';
     $stmt->execute([$electionId]);
     $candidates = $stmt->fetchAll();
     ?>
-    <form method="post">
+    <form method="post" id="step5form">
         <?php echo \App\Inc\csrf_input(); ?>
         <input type="hidden" name="step" value="5">
         <label>Kandidat*in (optional)
-            <select name="election_candidate_id">
-                <option value="">-- keine --</option>
+            <?php
+                $selectedCandidateLabel = '';
+                $selectedCandidateId = isset($flow['election_candidate_id']) && $flow['election_candidate_id'] !== null ? (int)$flow['election_candidate_id'] : 0;
+                foreach ($candidates as $c) {
+                    if ($selectedCandidateId && (int)$c['id'] === $selectedCandidateId) {
+                        $selectedCandidateLabel = $c['name'] . ' (' . ($c['party_label'] . ' / ' . $c['party_code']) . ')';
+                        break;
+                    }
+                }
+            ?>
+            <input list="election_candidates_list" id="election_candidate_input" name="election_candidate_input" value="<?php echo \App\Inc\h($selectedCandidateLabel); ?>" placeholder="Wähle oder tippe eine Kandidat*in">
+            <datalist id="election_candidates_list">
                 <?php foreach ($candidates as $c): ?>
-                    <option value="<?php echo (int) $c['id']; ?>" <?php echo isset($flow['election_candidate_id']) && (int) $flow['election_candidate_id'] === (int) $c['id'] ? 'selected' : ''; ?>><?php echo \App\Inc\h($c['name']); ?> (<?php echo \App\Inc\h($c['party_label'] . ' / ' . $c['party_code']); ?>)</option>
+                    <option data-id="<?php echo (int) $c['id']; ?>" value="<?php echo \App\Inc\h($c['name'] . ' (' . ($c['party_label'] . ' / ' . $c['party_code']) . ')'); ?>"></option>
                 <?php endforeach; ?>
-            </select>
+            </datalist>
+            <input type="hidden" name="election_candidate_id" id="election_candidate_id" value="<?php echo $selectedCandidateId ? (int)$selectedCandidateId : ''; ?>">
         </label>
         <br><br>
         <a href="upload.php?step=4">Zurück</a>
         <button type="submit" style="margin-left:1rem;">Weiter</button>
     </form>
+    <script>
+    (function(){
+        const list = document.getElementById('election_candidates_list');
+        const input = document.getElementById('election_candidate_input');
+        const hidden = document.getElementById('election_candidate_id');
+        if (!input || !list || !hidden) return;
+        const options = Array.from(list.options || []);
+        function sync() {
+            hidden.value = '';
+            const v = input.value || '';
+            for (const opt of options) {
+                if (opt.value === v) { hidden.value = opt.dataset.id || ''; break; }
+            }
+        }
+        input.addEventListener('input', sync);
+        document.getElementById('step5form').addEventListener('submit', sync);
+    })();
+    </script>
 <?php elseif ($step === 6): ?>
     <?php
     $pdo = \App\Core\Database::pdo();
@@ -149,6 +210,7 @@ require_once __DIR__ . '/../../app/views/header.php';
         <label>Bild: <input type="file" name="image" accept="image/jpeg,image/png" required></label><br><br>
         <a href="upload.php?step=5">Zurück</a>
         <button type="submit" style="margin-left:1rem;">Hochladen</button>
+            <button class="btn" type="submit" style="margin-left:1rem;">Hochladen</button>
     </form>
 <?php endif; ?>
 

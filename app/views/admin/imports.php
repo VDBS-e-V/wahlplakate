@@ -35,7 +35,7 @@
 	<li><a href="/admin/elections.php">Wahlen verwalten</a> - anlegen, aktivieren, deaktivieren, löschen</li>
 	<li><a href="/admin/import_parties.php?election_id=<?php echo (int) $selectedElectionId; ?>">Parteien für Wahl importieren</a> - party_code; party_name; ballot_label (optional)</li>
 	<li><a href="/admin/import_regions.php?election_id=<?php echo (int) $selectedElectionId; ?>">Ortsteile importieren</a> - bezirk; ortsteil</li>
-	<li><a href="/admin/import_candidates.php?election_id=<?php echo (int) $selectedElectionId; ?>">Kandidat*innen importieren</a> - candidate_name; party_code (optional, Standard PARTEILOS)</li>
+	<li><a href="/admin/import_candidates.php?election_id=<?php echo (int) $selectedElectionId; ?>">Kandidat*innen importieren</a> - candidate_name; party_code (optional, Standard PARTEILOS); list_type (optional)</li>
 </ul>
 <h2>CSV-Vorlagen</h2>
 <ul>

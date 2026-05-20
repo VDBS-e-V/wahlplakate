@@ -1,3 +1,3 @@
-candidate_name;party_code
-Max Schmidt;SPD
-Erika Beispiel;PARTEILOS
+candidate_name;party_code;list_type
+Max Schmidt;SPD;Bundesland
+Erika Beispiel;PARTEILOS;Bezirksliste
