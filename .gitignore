@@ -1,0 +1,6 @@
+/.env
+/storage/uploads/
+*.log
+.env
+storage/uploads/
+*.log
