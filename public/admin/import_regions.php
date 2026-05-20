@@ -5,20 +5,25 @@ require_once __DIR__ . '/../../app/inc/db.php';
 require_once __DIR__ . '/../../app/inc/csv.php';
 require_once __DIR__ . '/../../app/inc/util.php';
 
-$pageTitle = 'Import Regions';
+$pageTitle = 'Ortsteile importieren';
 \App\Inc\require_admin();
 $pdo = \App\Inc\db();
+$selectedElectionId = \App\Inc\require_election_selected();
 
-$stats = ['created_districts' => 0, 'created_localities' => 0, 'updated_localities' => 0, 'errors' => 0, 'messages' => []];
+$elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+
+$stats = ['created_districts' => 0, 'created_localities' => 0, 'updated_localities' => 0, 'errors' => 0];
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     \App\Inc\csrf_verify_or_die();
+    $selectedElectionId = \App\Inc\require_election_selected($selectedElectionId);
     
     try {
         $rows = \App\Inc\read_csv_uploaded('csv_file');
 
         if (empty($rows)) {
-            throw new \RuntimeException('CSV file is empty');
+            throw new \RuntimeException('Die CSV-Datei ist leer.');
         }
 
         foreach ($rows as $row) {
@@ -28,16 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($bezirk === '' || $ortsteil === '') {
                     $stats['errors']++;
+                    $errors[] = 'bezirk oder ortsteil fehlt.';
                     continue;
                 }
 
-                $dist_stmt = $pdo->prepare('SELECT id FROM districts WHERE name = ? LIMIT 1');
-                $dist_stmt->execute([$bezirk]);
+                $dist_stmt = $pdo->prepare('SELECT id FROM districts WHERE election_id = ? AND name = ? LIMIT 1');
+                $dist_stmt->execute([$selectedElectionId, $bezirk]);
                 $district_id = $dist_stmt->fetchColumn();
 
                 if (!$district_id) {
-                    $ins_dist = $pdo->prepare('INSERT INTO districts (name) VALUES (?)');
-                    $ins_dist->execute([$bezirk]);
+                    $ins_dist = $pdo->prepare('INSERT INTO districts (election_id, name) VALUES (?, ?)');
+                    $ins_dist->execute([$selectedElectionId, $bezirk]);
                     $district_id = $pdo->lastInsertId();
                     $stats['created_districts']++;
                 }
@@ -60,27 +66,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        $summary = "Import complete: {$stats['created_districts']} districts, {$stats['created_localities']} localities created, {$stats['updated_localities']} localities updated, {$stats['errors']} errors";
+        $summary = "Import abgeschlossen: {$stats['created_districts']} Bezirke, {$stats['created_localities']} Ortsteile neu, {$stats['updated_localities']} Ortsteile aktualisiert, {$stats['errors']} Fehler";
         \App\Inc\flash_set('success', $summary);
-        \App\Inc\redirect('/admin/import_regions.php');
+        \App\Inc\redirect('/admin/import_regions.php?election_id=' . $selectedElectionId);
         
     } catch (\Throwable $e) {
-        \App\Inc\flash_set('error', 'Import failed: ' . $e->getMessage());
-        \App\Inc\redirect('/admin/import_regions.php');
+        \App\Inc\flash_set('error', 'Import fehlgeschlagen: ' . $e->getMessage());
+        \App\Inc\redirect('/admin/import_regions.php?election_id=' . $selectedElectionId);
     }
 }
 ?>
 <?php require_once __DIR__ . '/../../app/views/header.php'; ?>
-<h1>Import Regions</h1>
-<p><strong>CSV Format:</strong> bezirk; ortsteil</p>
-<p>Bezirk (district) is created if not exists; Ortsteil (locality) is upseated per district.</p>
+<h1>Ortsteile importieren</h1>
+<p><strong>CSV-Format:</strong> bezirk; ortsteil</p>
 <form method="post" enctype="multipart/form-data">
     <?php echo \App\Inc\csrf_input(); ?>
+    <input type="hidden" name="election_id" value="<?php echo (int) $selectedElectionId; ?>">
+	<label>
+		Wahl auswählen
+		<select name="election_id" required>
+			<option value="">-- bitte wählen --</option>
+			<?php foreach ($elections as $election): ?>
+				<option value="<?php echo (int) $election['id']; ?>" <?php echo (int) $election['id'] === $selectedElectionId ? 'selected' : ''; ?>><?php echo \App\Inc\h($election['name']); ?></option>
+			<?php endforeach; ?>
+		</select>
+	</label><br>
     <label>
-        CSV File:
+        CSV-Datei
         <input type="file" name="csv_file" accept=".csv" required>
     </label><br>
-    <button type="submit">Import</button>
+    <button type="submit">Importieren</button>
 </form>
-<a href="/admin/imports.php">Back to Imports</a>
+<?php if ($errors !== []): ?>
+	<h2>Erste Fehler</h2>
+	<table border="1" cellpadding="6" cellspacing="0">
+		<tr><th>#</th><th>Nachricht</th></tr>
+		<?php foreach (array_slice($errors, 0, 10) as $index => $message): ?>
+			<tr><td><?php echo $index + 1; ?></td><td><?php echo \App\Inc\h($message); ?></td></tr>
+		<?php endforeach; ?>
+	</table>
+<?php endif; ?>
+<a href="/admin/imports.php?election_id=<?php echo (int) $selectedElectionId; ?>">Zurück zum Import-Dashboard</a>
 <?php require_once __DIR__ . '/../../app/views/footer.php'; ?>

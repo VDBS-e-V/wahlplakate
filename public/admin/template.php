@@ -6,9 +6,8 @@ require_once __DIR__ . '/../../app/inc/util.php';
 
 $name = strtolower(trim((string) ($_GET['name'] ?? '')));
 $map = [
-	'parties' => __DIR__ . '/../../app/templates/parties_template.csv',
+	'election_parties' => __DIR__ . '/../../app/templates/election_parties_template.csv',
 	'regions' => __DIR__ . '/../../app/templates/regions_template.csv',
-	'elections' => __DIR__ . '/../../app/templates/elections_template.csv',
 	'candidates' => __DIR__ . '/../../app/templates/candidates_template.csv',
 ];
 

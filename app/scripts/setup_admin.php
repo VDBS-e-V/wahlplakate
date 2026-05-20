@@ -24,7 +24,7 @@ if ($exists) {
 	exit;
 }
 
-$password = \App\Inc\random_password(8);
+$password = \App\Inc\random_password(16);
 
 $hash = password_hash($password, PASSWORD_DEFAULT);
 

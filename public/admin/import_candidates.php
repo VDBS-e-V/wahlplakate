@@ -6,86 +6,105 @@ require_once __DIR__ . '/../../app/inc/csv.php';
 require_once __DIR__ . '/../../app/inc/util.php';
 require_once __DIR__ . '/../../app/inc/idgen.php';
 
-$pageTitle = 'Import Candidates';
+$pageTitle = 'Kandidat*innen importieren';
 \App\Inc\require_admin();
 $pdo = \App\Inc\db();
+$selectedElectionId = \App\Inc\require_election_selected();
 
-$stats = ['created' => 0, 'skipped' => 0, 'errors' => 0, 'messages' => []];
+$elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+$stats = ['created' => 0, 'skipped' => 0, 'errors' => 0];
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     \App\Inc\csrf_verify_or_die();
-    
+    $selectedElectionId = \App\Inc\require_election_selected($selectedElectionId);
+
     try {
         $rows = \App\Inc\read_csv_uploaded('csv_file');
-
         if (empty($rows)) {
-            throw new \RuntimeException('CSV file is empty');
+            throw new \RuntimeException('Die CSV-Datei ist leer.');
         }
 
         foreach ($rows as $row) {
             try {
                 $name = trim((string) ($row['candidate_name'] ?? ''));
-                $party_code = trim((string) ($row['party_code'] ?? ''));
+                $partyCode = trim((string) ($row['party_code'] ?? ''));
 
                 if ($name === '') {
                     $stats['errors']++;
+                    $errors[] = 'candidate_name fehlt.';
                     continue;
                 }
 
-                if ($party_code === '') {
-                    $party_code = 'PARTEILOS';
+                if ($partyCode === '') {
+                    $partyCode = 'PARTEILOS';
                 }
 
-                $party_stmt = $pdo->prepare('SELECT id FROM parties WHERE code = ? LIMIT 1');
-                $party_stmt->execute([$party_code]);
-                $party_id = $party_stmt->fetchColumn();
+                $partyStmt = $pdo->prepare('SELECT ep.id FROM election_parties ep INNER JOIN parties p ON p.id = ep.party_id WHERE ep.election_id = ? AND p.code = ? LIMIT 1');
+                $partyStmt->execute([$selectedElectionId, $partyCode]);
+                $electionPartyId = $partyStmt->fetchColumn();
 
-                if (!$party_id) {
+                if (! $electionPartyId) {
                     $stats['errors']++;
+                    $errors[] = 'Partei ' . $partyCode . ' ist dieser Wahl nicht zugeordnet.';
                     continue;
                 }
 
-                $check_stmt = $pdo->prepare('SELECT 1 FROM candidates WHERE name = ? AND party_id = ? LIMIT 1');
-                $check_stmt->execute([$name, $party_id]);
-
-                if ($check_stmt->fetchColumn()) {
+                $checkStmt = $pdo->prepare('SELECT 1 FROM election_candidates WHERE election_id = ? AND election_party_id = ? AND name = ? LIMIT 1');
+                $checkStmt->execute([$selectedElectionId, $electionPartyId, $name]);
+                if ($checkStmt->fetchColumn()) {
                     $stats['skipped']++;
                     continue;
                 }
 
-                $candidate_code = \App\Inc\generate_candidate_code($pdo, $party_code, $name);
-
-                $ins = $pdo->prepare('INSERT INTO candidates (party_id, name, candidate_code) VALUES (?, ?, ?)');
-                $ins->execute([$party_id, $name, $candidate_code]);
+                $candidateCode = \App\Inc\generate_candidate_code($pdo, $partyCode, $name);
+                $ins = $pdo->prepare('INSERT INTO election_candidates (election_id, election_party_id, name, candidate_code) VALUES (?, ?, ?, ?)');
+                $ins->execute([$selectedElectionId, $electionPartyId, $name, $candidateCode]);
                 $stats['created']++;
-
             } catch (\Throwable $e) {
                 $stats['errors']++;
+                $errors[] = $e->getMessage();
             }
         }
-        
-        $summary = "Import complete: {$stats['created']} created, {$stats['skipped']} skipped, {$stats['errors']} errors";
+
+        $summary = "Import abgeschlossen: {$stats['created']} neu, {$stats['skipped']} übersprungen, {$stats['errors']} Fehler";
         \App\Inc\flash_set('success', $summary);
-        \App\Inc\redirect('/admin/import_candidates.php');
-        
+        \App\Inc\redirect('/admin/import_candidates.php?election_id=' . $selectedElectionId);
     } catch (\Throwable $e) {
-        \App\Inc\flash_set('error', 'Import failed: ' . $e->getMessage());
-        \App\Inc\redirect('/admin/import_candidates.php');
+        \App\Inc\flash_set('error', 'Import fehlgeschlagen: ' . $e->getMessage());
+        \App\Inc\redirect('/admin/import_candidates.php?election_id=' . $selectedElectionId);
     }
 }
 ?>
 <?php require_once __DIR__ . '/../../app/views/header.php'; ?>
-<h1>Import Candidates</h1>
-<p><strong>CSV Format:</strong> candidate_name; party_code (optional, defaults to PARTEILOS)</p>
-<p><strong>Behavior:</strong> Append-only. Candidates with matching (name, party_id) are skipped. Candidate codes are auto-generated as: partyCode-nameCode-randomBase36</p>
-<p><strong>Note:</strong> Party must exist in database before importing candidates.</p>
+<h1>Kandidat*innen importieren</h1>
+<p><strong>CSV-Format:</strong> candidate_name; party_code (optional, Standard PARTEILOS)</p>
 <form method="post" enctype="multipart/form-data">
     <?php echo \App\Inc\csrf_input(); ?>
+    <input type="hidden" name="election_id" value="<?php echo (int) $selectedElectionId; ?>">
     <label>
-        CSV File:
+        Wahl auswählen
+        <select name="election_id" required>
+            <option value="">-- bitte wählen --</option>
+            <?php foreach ($elections as $election): ?>
+                <option value="<?php echo (int) $election['id']; ?>" <?php echo (int) $election['id'] === $selectedElectionId ? 'selected' : ''; ?>><?php echo \App\Inc\h($election['name']); ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label><br>
+    <label>
+        CSV-Datei:
         <input type="file" name="csv_file" accept=".csv" required>
     </label><br>
-    <button type="submit">Import</button>
+    <button type="submit">Importieren</button>
 </form>
-<a href="/admin/imports.php">Back to Imports</a>
+<?php if ($errors !== []): ?>
+    <h2>Erste Fehler</h2>
+    <table border="1" cellpadding="6" cellspacing="0">
+        <tr><th>#</th><th>Nachricht</th></tr>
+        <?php foreach (array_slice($errors, 0, 10) as $index => $message): ?>
+            <tr><td><?php echo $index + 1; ?></td><td><?php echo \App\Inc\h($message); ?></td></tr>
+        <?php endforeach; ?>
+    </table>
+<?php endif; ?>
+<a href="/admin/imports.php?election_id=<?php echo (int) $selectedElectionId; ?>">Zurück zum Import-Dashboard</a>
 <?php require_once __DIR__ . '/../../app/views/footer.php'; ?>

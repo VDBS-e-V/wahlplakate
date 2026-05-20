@@ -87,13 +87,15 @@
 <?php endforeach; ?>
 <div class="container">
 	<div class="nav">
-		<a href="/">Home</a>
+		<a href="/">Startseite</a>
 		<?php if (\App\Inc\is_admin()): ?>
-			<a href="/admin/imports.php">Admin</a>
+			<a href="/admin/elections.php">Wahlen</a>
+			<a href="/admin/imports.php">Import-Dashboard</a>
+			<a href="/admin/users.php">Benutzerverwaltung</a>
 		<?php endif; ?>
 		<?php if (\App\Inc\is_logged_in()): ?>
-			<a href="/logout.php">Logout</a>
+			<a href="/logout.php">Abmelden</a>
 		<?php else: ?>
-			<a href="/login.php">Login</a>
+			<a href="/login.php">Anmelden</a>
 		<?php endif; ?>
 	</div>
