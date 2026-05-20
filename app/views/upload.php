@@ -30,7 +30,7 @@ require_once __DIR__ . '/../../app/views/header.php';
 <?php elseif ($step === 2): ?>
     <?php
     $pdo = \App\Core\Database::pdo();
-    $stmt = $pdo->prepare('SELECT id, name FROM districts WHERE election_id = ? ORDER BY name');
+    $stmt = $pdo->prepare('SELECT id, name FROM wpl_districts WHERE election_id = ? ORDER BY name');
     $stmt->execute([$electionId]);
     $districts = $stmt->fetchAll();
     ?>
@@ -53,7 +53,7 @@ require_once __DIR__ . '/../../app/views/header.php';
     <?php
     $pdo = \App\Core\Database::pdo();
     $districtId = (int) ($flow['district_id'] ?? 0);
-    $stmt = $pdo->prepare('SELECT id, name FROM localities WHERE district_id = ? ORDER BY name');
+    $stmt = $pdo->prepare('SELECT id, name FROM wpl_localities WHERE district_id = ? ORDER BY name');
     $stmt->execute([$districtId]);
     $localities = $stmt->fetchAll();
     ?>
@@ -75,7 +75,7 @@ require_once __DIR__ . '/../../app/views/header.php';
 <?php elseif ($step === 4): ?>
     <?php
     $pdo = \App\Core\Database::pdo();
-    $stmt = $pdo->prepare('SELECT ep.id, p.code, COALESCE(ep.ballot_label, p.name) AS label FROM election_parties ep INNER JOIN parties p ON p.id = ep.party_id WHERE ep.election_id = ? ORDER BY COALESCE(ep.ballot_label, p.name)');
+    $stmt = $pdo->prepare('SELECT ep.id, p.code, COALESCE(ep.ballot_label, p.name) AS label FROM wpl_election_parties ep INNER JOIN wpl_parties p ON p.id = ep.party_id WHERE ep.election_id = ? ORDER BY COALESCE(ep.ballot_label, p.name)');
     $stmt->execute([$electionId]);
     $electionParties = $stmt->fetchAll();
     ?>
@@ -97,7 +97,7 @@ require_once __DIR__ . '/../../app/views/header.php';
 <?php elseif ($step === 5): ?>
     <?php
     $pdo = \App\Core\Database::pdo();
-    $stmt = $pdo->prepare('SELECT ec.id, ec.name, p.code AS party_code, COALESCE(ep.ballot_label, p.name) AS party_label FROM election_candidates ec INNER JOIN election_parties ep ON ep.id = ec.election_party_id INNER JOIN parties p ON p.id = ep.party_id WHERE ec.election_id = ? ORDER BY ec.name');
+    $stmt = $pdo->prepare('SELECT ec.id, ec.name, p.code AS party_code, COALESCE(ep.ballot_label, p.name) AS party_label FROM wpl_election_candidates ec INNER JOIN wpl_election_parties ep ON ep.id = ec.election_party_id INNER JOIN wpl_parties p ON p.id = ep.party_id WHERE ec.election_id = ? ORDER BY ec.name');
     $stmt->execute([$electionId]);
     $candidates = $stmt->fetchAll();
     ?>
@@ -119,19 +119,19 @@ require_once __DIR__ . '/../../app/views/header.php';
 <?php elseif ($step === 6): ?>
     <?php
     $pdo = \App\Core\Database::pdo();
-    $stmt = $pdo->prepare('SELECT name FROM elections WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT name FROM wpl_elections WHERE id = ? LIMIT 1');
     $stmt->execute([$electionId]);
     $electionName = $stmt->fetchColumn();
-    $stmt = $pdo->prepare('SELECT name FROM districts WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT name FROM wpl_districts WHERE id = ? LIMIT 1');
     $stmt->execute([(int) ($flow['district_id'] ?? 0)]);
     $districtName = $stmt->fetchColumn();
-    $stmt = $pdo->prepare('SELECT name FROM localities WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT name FROM wpl_localities WHERE id = ? LIMIT 1');
     $stmt->execute([(int) ($flow['locality_id'] ?? 0)]);
     $localityName = $stmt->fetchColumn();
-    $stmt = $pdo->prepare('SELECT ep.id, p.code, COALESCE(ep.ballot_label, p.name) AS label FROM election_parties ep INNER JOIN parties p ON p.id = ep.party_id WHERE ep.id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT ep.id, p.code, COALESCE(ep.ballot_label, p.name) AS label FROM wpl_election_parties ep INNER JOIN wpl_parties p ON p.id = ep.party_id WHERE ep.id = ? LIMIT 1');
     $stmt->execute([(int) ($flow['election_party_id'] ?? 0)]);
     $partyRow = $stmt->fetch();
-    $stmt = $pdo->prepare('SELECT name FROM election_candidates WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT name FROM wpl_election_candidates WHERE id = ? LIMIT 1');
     $stmt->execute([(int) ($flow['election_candidate_id'] ?? 0)]);
     $candidateName = $stmt->fetchColumn();
     ?>

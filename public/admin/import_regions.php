@@ -10,7 +10,7 @@ $pageTitle = 'Ortsteile importieren';
 $pdo = \App\Inc\db();
 $selectedElectionId = \App\Inc\require_election_selected();
 
-$elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+$elections = $pdo->query('SELECT id, name FROM wpl_elections ORDER BY id DESC')->fetchAll();
 
 $stats = ['created_districts' => 0, 'created_localities' => 0, 'updated_localities' => 0, 'errors' => 0];
 $errors = [];
@@ -37,27 +37,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
 
-                $dist_stmt = $pdo->prepare('SELECT id FROM districts WHERE election_id = ? AND name = ? LIMIT 1');
+                $dist_stmt = $pdo->prepare('SELECT id FROM wpl_districts WHERE election_id = ? AND name = ? LIMIT 1');
                 $dist_stmt->execute([$selectedElectionId, $bezirk]);
                 $district_id = $dist_stmt->fetchColumn();
 
                 if (!$district_id) {
-                    $ins_dist = $pdo->prepare('INSERT INTO districts (election_id, name) VALUES (?, ?)');
+                    $ins_dist = $pdo->prepare('INSERT INTO wpl_districts (election_id, name) VALUES (?, ?)');
                     $ins_dist->execute([$selectedElectionId, $bezirk]);
                     $district_id = $pdo->lastInsertId();
                     $stats['created_districts']++;
                 }
 
-                $loc_stmt = $pdo->prepare('SELECT id FROM localities WHERE district_id = ? AND name = ? LIMIT 1');
+                $loc_stmt = $pdo->prepare('SELECT id FROM wpl_localities WHERE district_id = ? AND name = ? LIMIT 1');
                 $loc_stmt->execute([$district_id, $ortsteil]);
                 $locality_id = $loc_stmt->fetchColumn();
 
                 if ($locality_id) {
-                    $upd_loc = $pdo->prepare('UPDATE localities SET district_id = ? WHERE id = ?');
+                    $upd_loc = $pdo->prepare('UPDATE wpl_localities SET district_id = ? WHERE id = ?');
                     $upd_loc->execute([$district_id, $locality_id]);
                     $stats['updated_localities']++;
                 } else {
-                    $ins_loc = $pdo->prepare('INSERT INTO localities (district_id, name) VALUES (?, ?)');
+                    $ins_loc = $pdo->prepare('INSERT INTO wpl_localities (district_id, name) VALUES (?, ?)');
                     $ins_loc->execute([$district_id, $ortsteil]);
                     $stats['created_localities']++;
                 }

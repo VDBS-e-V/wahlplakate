@@ -12,7 +12,7 @@ if (empty($_GET['id']) || ! ctype_digit((string)$_GET['id'])) {
 $id = (int) $_GET['id'];
 require_once __DIR__ . '/../app/inc/db.php';
 $pdo = \App\Inc\db();
-$stmt = $pdo->prepare('SELECT file_path, mime, original_filename FROM images WHERE id = ? LIMIT 1');
+$stmt = $pdo->prepare('SELECT file_path, mime, original_filename FROM wpl_images WHERE id = ? LIMIT 1');
 $stmt->execute([$id]);
 $row = $stmt->fetch();
 if (! $row) {

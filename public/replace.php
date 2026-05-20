@@ -15,7 +15,7 @@ if (empty($_GET['id']) || ! ctype_digit((string)$_GET['id'])) {
     exit;
 }
 $id = (int) $_GET['id'];
-$stmt = $pdo->prepare('SELECT id, uploaded_by, file_path FROM images WHERE id = ? LIMIT 1');
+ $stmt = $pdo->prepare('SELECT id, uploaded_by, file_path FROM wpl_images WHERE id = ? LIMIT 1');
 $stmt->execute([$id]);
 $img = $stmt->fetch();
 if (! $img) {
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $validated = \App\Inc\validate_upload($_FILES['image']);
         // check duplicate sha
-        $dup = $pdo->prepare('SELECT id FROM images WHERE sha256 = ? AND id != ? LIMIT 1');
+        $dup = $pdo->prepare('SELECT id FROM wpl_images WHERE sha256 = ? AND id != ? LIMIT 1');
         $dup->execute([$validated['sha256'], $id]);
         $existing = $dup->fetchColumn();
         if ($existing) {
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stored = \App\Inc\store_upload($validated);
 
-        $upd = $pdo->prepare('UPDATE images SET file_path = ?, original_filename = ?, mime = ?, size_bytes = ?, sha256 = ? WHERE id = ?');
+        $upd = $pdo->prepare('UPDATE wpl_images SET file_path = ?, original_filename = ?, mime = ?, size_bytes = ?, sha256 = ? WHERE id = ?');
         $upd->execute([$stored['file_path'], $_FILES['image']['name'], $validated['mime'], $validated['size_bytes'], $validated['sha256'], $id]);
 
         // delete old file

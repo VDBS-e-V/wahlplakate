@@ -30,13 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dateVal = $dateIso;
         }
 
-        $stmt = $pdo->prepare('SELECT id FROM elections WHERE name = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id FROM wpl_elections WHERE name = ? LIMIT 1');
         $stmt->execute([$name]);
         if ($stmt->fetchColumn()) {
             throw new \RuntimeException('Diese Wahl existiert bereits.');
         }
 
-        $ins = $pdo->prepare('INSERT INTO elections (name, start_date) VALUES (?, ?)');
+        $ins = $pdo->prepare('INSERT INTO wpl_elections (name, start_date) VALUES (?, ?)');
         $ins->execute([$name, $dateVal]);
         $stats['created']++;
 

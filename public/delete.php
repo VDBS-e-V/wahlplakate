@@ -15,7 +15,7 @@ if (empty($_GET['id']) || ! ctype_digit((string)$_GET['id'])) {
     exit;
 }
 $id = (int) $_GET['id'];
-$stmt = $pdo->prepare('SELECT id, uploaded_by, file_path FROM images WHERE id = ? LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, uploaded_by, file_path FROM wpl_images WHERE id = ? LIMIT 1');
 $stmt->execute([$id]);
 $img = $stmt->fetch();
 if (! $img) {
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $pdo->beginTransaction();
     try {
-        $del = $pdo->prepare('DELETE FROM images WHERE id = ?');
+        $del = $pdo->prepare('DELETE FROM wpl_images WHERE id = ?');
         $del->execute([$id]);
         $pdo->commit();
         \App\Inc\delete_stored_file($img['file_path']);

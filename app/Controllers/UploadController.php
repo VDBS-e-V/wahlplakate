@@ -23,7 +23,7 @@ class UploadController extends BaseController
         $changeElection = isset($_GET['change_election']) && $_GET['change_election'];
         $step = (int) ($_GET['step'] ?? $_POST['step'] ?? ($defaultElectionId && ! $changeElection ? 2 : 1));
 
-        $elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+        $elections = $pdo->query('SELECT id, name FROM wpl_elections ORDER BY id DESC')->fetchAll();
 
         if (! isset($_SESSION['upload_flow']) || $changeElection) {
             $_SESSION['upload_flow'] = [];
@@ -38,7 +38,7 @@ class UploadController extends BaseController
                         if ($sel <= 0) {
                             throw new \RuntimeException('Bitte eine Wahl auswählen.');
                         }
-                        $stmt = $pdo->prepare('SELECT id FROM elections WHERE id = ? LIMIT 1');
+                        $stmt = $pdo->prepare('SELECT id FROM wpl_elections WHERE id = ? LIMIT 1');
                         $stmt->execute([$sel]);
                         if (! $stmt->fetchColumn()) {
                             throw new \RuntimeException('Ungültige Wahl.');
@@ -56,7 +56,7 @@ class UploadController extends BaseController
                         if ($districtId <= 0) {
                             throw new \RuntimeException('Bitte einen Bezirk auswählen.');
                         }
-                        $stmt = $pdo->prepare('SELECT id FROM districts WHERE id = ? AND election_id = ? LIMIT 1');
+                        $stmt = $pdo->prepare('SELECT id FROM wpl_districts WHERE id = ? AND election_id = ? LIMIT 1');
                         $stmt->execute([$districtId, $electionId]);
                         if (! $stmt->fetchColumn()) {
                             throw new \RuntimeException('Der ausgewählte Bezirk gehört nicht zur Wahl.');
@@ -71,7 +71,7 @@ class UploadController extends BaseController
                         if ($localityId <= 0) {
                             throw new \RuntimeException('Bitte einen Ortsteil auswählen.');
                         }
-                        $stmt = $pdo->prepare('SELECT l.id FROM localities l INNER JOIN districts d ON d.id = l.district_id WHERE l.id = ? AND d.id = ? LIMIT 1');
+                        $stmt = $pdo->prepare('SELECT l.id FROM wpl_localities l INNER JOIN wpl_districts d ON d.id = l.district_id WHERE l.id = ? AND d.id = ? LIMIT 1');
                         $stmt->execute([$localityId, $districtId]);
                         if (! $stmt->fetchColumn()) {
                             throw new \RuntimeException('Ortsteil gehört nicht zum Bezirk.');
@@ -86,7 +86,7 @@ class UploadController extends BaseController
                         if ($epId <= 0) {
                             throw new \RuntimeException('Bitte eine Partei auswählen.');
                         }
-                        $stmt = $pdo->prepare('SELECT id FROM election_parties WHERE id = ? AND election_id = ? LIMIT 1');
+                        $stmt = $pdo->prepare('SELECT id FROM wpl_election_parties WHERE id = ? AND election_id = ? LIMIT 1');
                         $stmt->execute([$epId, $electionId]);
                         if (! $stmt->fetchColumn()) {
                             throw new \RuntimeException('Die ausgewählte Partei gehört nicht zur Wahl.');
@@ -99,7 +99,7 @@ class UploadController extends BaseController
                         $electionId = $_SESSION['upload_flow']['election_id'] ?? $defaultElectionId;
                         $candId = isset($_POST['election_candidate_id']) && $_POST['election_candidate_id'] !== '' ? (int) $_POST['election_candidate_id'] : null;
                         if ($candId !== null) {
-                            $stmt = $pdo->prepare('SELECT id, election_party_id FROM election_candidates WHERE id = ? AND election_id = ? LIMIT 1');
+                            $stmt = $pdo->prepare('SELECT id, election_party_id FROM wpl_election_candidates WHERE id = ? AND election_id = ? LIMIT 1');
                             $stmt->execute([$candId, $electionId]);
                             $candidate = $stmt->fetch();
                             if (! $candidate) {
@@ -130,7 +130,7 @@ class UploadController extends BaseController
 
                         $validated = \App\Inc\validate_upload($_FILES['image']);
 
-                        $dup = $pdo->prepare('SELECT id FROM images WHERE sha256 = ? LIMIT 1');
+                        $dup = $pdo->prepare('SELECT id FROM wpl_images WHERE sha256 = ? LIMIT 1');
                         $dup->execute([$validated['sha256']]);
                         $existing = $dup->fetchColumn();
                         if ($existing) {
@@ -138,7 +138,7 @@ class UploadController extends BaseController
                         }
 
                         $stored = \App\Inc\store_upload($validated);
-                        $ins = $pdo->prepare('INSERT INTO images (election_id, election_party_id, election_candidate_id, locality_id, file_path, original_filename, mime, size_bytes, sha256, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins = $pdo->prepare('INSERT INTO wpl_images (election_id, election_party_id, election_candidate_id, locality_id, file_path, original_filename, mime, size_bytes, sha256, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                         $ins->execute([$electionId, $electionPartyId, $electionCandidateId, $localityId, $stored['file_path'], $_FILES['image']['name'], $validated['mime'], $validated['size_bytes'], $validated['sha256'], $_SESSION['user_id'] ?? null]);
                         $id = $pdo->lastInsertId();
 

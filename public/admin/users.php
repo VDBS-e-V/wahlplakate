@@ -29,14 +29,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			}
 			$password = \App\Inc\random_password(16);
 			$hash = password_hash($password, PASSWORD_DEFAULT);
-			$insert = $pdo->prepare('INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)');
+			$insert = $pdo->prepare('INSERT INTO wpl_users (email, password_hash, role) VALUES (?, ?, ?)');
 			$insert->execute([$email, $hash, $role]);
 			\App\Inc\flash_set('success', 'Benutzer angelegt: ' . $email . ' | Passwort: ' . $password);
 			\App\Inc\redirect('/admin/users.php');
 		}
 
 		if ($action === 'reset_password') {
-			$stmt = $pdo->prepare('SELECT id, email FROM users WHERE id = ? LIMIT 1');
+			$stmt = $pdo->prepare('SELECT id, email FROM wpl_users WHERE id = ? LIMIT 1');
 			$stmt->execute([$userId]);
 			$user = $stmt->fetch();
 			if (! $user) {
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			}
 			$password = \App\Inc\random_password(16);
 			$hash = password_hash($password, PASSWORD_DEFAULT);
-			$update = $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+			$update = $pdo->prepare('UPDATE wpl_users SET password_hash = ? WHERE id = ?');
 			$update->execute([$hash, $userId]);
 			\App\Inc\flash_set('success', 'Neues Passwort für ' . $user['email'] . ': ' . $password);
 			\App\Inc\redirect('/admin/users.php');
@@ -55,13 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			if (!in_array($role, $allowedRoles, true)) {
 				throw new \RuntimeException('Ungültige Rolle.');
 			}
-			$stmt = $pdo->prepare('SELECT id, email, role FROM users WHERE id = ? LIMIT 1');
+			$stmt = $pdo->prepare('SELECT id, email, role FROM wpl_users WHERE id = ? LIMIT 1');
 			$stmt->execute([$userId]);
 			$user = $stmt->fetch();
 			if (! $user) {
 				throw new \RuntimeException('Benutzer nicht gefunden.');
 			}
-			$update = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
+			$update = $pdo->prepare('UPDATE wpl_users SET role = ? WHERE id = ?');
 			$update->execute([$role, $userId]);
 			\App\Inc\flash_set('success', 'Rolle geändert für ' . $user['email'] . ': ' . $role);
 			\App\Inc\redirect('/admin/users.php');
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	}
 }
 
-$users = $pdo->query('SELECT id, email, role, created_at FROM users ORDER BY created_at DESC, id DESC')->fetchAll();
+$users = $pdo->query('SELECT id, email, role, created_at FROM wpl_users ORDER BY created_at DESC, id DESC')->fetchAll();
 ?>
 <?php require_once __DIR__ . '/../../app/views/header.php'; ?>
 <h1>Benutzerverwaltung</h1>

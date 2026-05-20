@@ -13,7 +13,7 @@ class ImportsController extends BaseController
 	{
 		\App\Inc\require_admin();
 		$pdo = Database::pdo();
-		$elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+		$elections = $pdo->query('SELECT id, name FROM wpl_elections ORDER BY id DESC')->fetchAll();
 		$selectedElectionId = (int) ($_GET['election_id'] ?? ($elections[0]['id'] ?? 0));
 
 		$status = [
@@ -23,9 +23,17 @@ class ImportsController extends BaseController
 		];
 
 		try {
-			$status['parteilos'] = (bool) $pdo->query("SELECT id FROM parties WHERE code = 'PARTEILOS' LIMIT 1")->fetchColumn();
-			foreach (['parties', 'election_parties', 'election_candidates', 'districts', 'localities', 'elections'] as $table) {
-				$status['counts'][$table] = (int) $pdo->query("SELECT COUNT(*) FROM {$table}")->fetchColumn();
+			$status['parteilos'] = (bool) $pdo->query("SELECT id FROM wpl_parties WHERE code = 'PARTEILOS' LIMIT 1")->fetchColumn();
+			$tables = [
+				'parties' => 'wpl_parties',
+				'election_parties' => 'wpl_election_parties',
+				'election_candidates' => 'wpl_election_candidates',
+				'districts' => 'wpl_districts',
+				'localities' => 'wpl_localities',
+				'elections' => 'wpl_elections',
+			];
+			foreach ($tables as $key => $table) {
+				$status['counts'][$key] = (int) $pdo->query("SELECT COUNT(*) FROM {$table}")->fetchColumn();
 			}
 		} catch (\Throwable $e) {
 			$status['counts'] = [];

@@ -11,7 +11,7 @@ $pageTitle = 'Kandidat*innen importieren';
 $pdo = \App\Inc\db();
 $selectedElectionId = \App\Inc\require_election_selected();
 
-$elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+$elections = $pdo->query('SELECT id, name FROM wpl_elections ORDER BY id DESC')->fetchAll();
 $stats = ['created' => 0, 'skipped' => 0, 'errors' => 0];
 $errors = [];
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $partyCode = 'PARTEILOS';
                 }
 
-                $partyStmt = $pdo->prepare('SELECT ep.id FROM election_parties ep INNER JOIN parties p ON p.id = ep.party_id WHERE ep.election_id = ? AND p.code = ? LIMIT 1');
+                $partyStmt = $pdo->prepare('SELECT ep.id FROM wpl_election_parties ep INNER JOIN wpl_parties p ON p.id = ep.party_id WHERE ep.election_id = ? AND p.code = ? LIMIT 1');
                 $partyStmt->execute([$selectedElectionId, $partyCode]);
                 $electionPartyId = $partyStmt->fetchColumn();
 
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
 
-                $checkStmt = $pdo->prepare('SELECT 1 FROM election_candidates WHERE election_id = ? AND election_party_id = ? AND name = ? LIMIT 1');
+                $checkStmt = $pdo->prepare('SELECT 1 FROM wpl_election_candidates WHERE election_id = ? AND election_party_id = ? AND name = ? LIMIT 1');
                 $checkStmt->execute([$selectedElectionId, $electionPartyId, $name]);
                 if ($checkStmt->fetchColumn()) {
                     $stats['skipped']++;
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $candidateCode = \App\Inc\generate_candidate_code($pdo, $partyCode, $name);
-                $ins = $pdo->prepare('INSERT INTO election_candidates (election_id, election_party_id, name, candidate_code) VALUES (?, ?, ?, ?)');
+                $ins = $pdo->prepare('INSERT INTO wpl_election_candidates (election_id, election_party_id, name, candidate_code) VALUES (?, ?, ?, ?)');
                 $ins->execute([$selectedElectionId, $electionPartyId, $name, $candidateCode]);
                 $stats['created']++;
             } catch (\Throwable $e) {

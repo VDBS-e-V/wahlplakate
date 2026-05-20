@@ -16,7 +16,7 @@ function exec_sql_script(\PDO $pdo, string $sql): void
 
 function ensure_schema(\PDO $pdo): void
 {
-	$check = $pdo->query("SHOW TABLES LIKE 'users'");
+	$check = $pdo->query("SHOW TABLES LIKE 'wpl_users'");
 	if ($check && $check->fetchColumn()) {
 		return;
 	}
@@ -36,7 +36,7 @@ function ensure_schema(\PDO $pdo): void
 
 function ensure_wahl_scoped_schema(\PDO $pdo): void
 {
-	$check = $pdo->query("SHOW TABLES LIKE 'election_parties'");
+	$check = $pdo->query("SHOW TABLES LIKE 'wpl_election_parties'");
 	if ($check && $check->fetchColumn()) {
 		return;
 	}
@@ -61,12 +61,27 @@ function db(): \PDO
 		return $pdo;
 	}
 
-	$host = env('DB_HOST', '127.0.0.1');
+	$hostRaw = env('DB_HOST', '127.0.0.1');
+	$port = env('DB_PORT', null);
 	$name = env_required('DB_NAME');
 	$user = env('DB_USER', 'root');
 	$pass = env('DB_PASS', '');
 
-	$dsn = "mysql:host={$host};dbname={$name};charset=utf8mb4";
+	// parse host:port (e.g. localhost:3307 or [::1]:3307)
+	$host = $hostRaw;
+	if (preg_match('/^\[(.*)\]:(\d+)$/', $hostRaw, $m)) {
+		$host = $m[1];
+		$port = $m[2];
+	} elseif (preg_match('/^(.*):(\d+)$/', $hostRaw, $m)) {
+		$host = $m[1];
+		$port = $m[2];
+	}
+
+	$dsn = "mysql:host={$host};";
+	if (! empty($port)) {
+		$dsn .= "port={$port};";
+	}
+	$dsn .= "dbname={$name};charset=utf8mb4";
 	$options = [
 		\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
 		\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,

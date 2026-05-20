@@ -157,7 +157,7 @@ function require_election_selected(?int $fallbackElectionId = null): int
 	}
 	if ($electionId <= 0) {
 		$pdo = db();
-		$first = $pdo->query('SELECT id FROM elections ORDER BY id DESC LIMIT 1')->fetchColumn();
+		$first = $pdo->query('SELECT id FROM wpl_elections ORDER BY id DESC LIMIT 1')->fetchColumn();
 		$electionId = $first ? (int) $first : 0;
 	}
 	if ($electionId <= 0) {
@@ -165,7 +165,7 @@ function require_election_selected(?int $fallbackElectionId = null): int
 		redirect('/admin/imports.php');
 	}
 	$pdo = db();
-	$stmt = $pdo->prepare('SELECT id FROM elections WHERE id = ? LIMIT 1');
+	$stmt = $pdo->prepare('SELECT id FROM wpl_elections WHERE id = ? LIMIT 1');
 	$stmt->execute([$electionId]);
 	if (! $stmt->fetchColumn()) {
 		flash_set('error', 'Die gewählte Wahl existiert nicht.');

@@ -10,7 +10,7 @@ $pageTitle = 'Parteien für Wahl importieren';
 $pdo = \App\Inc\db();
 $selectedElectionId = \App\Inc\require_election_selected();
 
-$elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
+$elections = $pdo->query('SELECT id, name FROM wpl_elections ORDER BY id DESC')->fetchAll();
 
 $stats = ['inserted' => 0, 'updated' => 0, 'linked' => 0, 'errors' => 0];
 $errors = [];
@@ -39,17 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
 
-                $stmt = $pdo->prepare('SELECT id FROM parties WHERE code = ? LIMIT 1');
+                $stmt = $pdo->prepare('SELECT id FROM wpl_parties WHERE code = ? LIMIT 1');
                 $stmt->execute([$code]);
                 $existing = $stmt->fetchColumn();
 
                 if ($existing) {
-                    $upd = $pdo->prepare('UPDATE parties SET name = ? WHERE code = ?');
+                    $upd = $pdo->prepare('UPDATE wpl_parties SET name = ? WHERE code = ?');
                     $upd->execute([$name, $code]);
                     $stats['updated']++;
                     $partyId = (int) $existing;
                 } else {
-                    $ins = $pdo->prepare('INSERT INTO parties (name, code) VALUES (?, ?)');
+                    $ins = $pdo->prepare('INSERT INTO wpl_parties (name, code) VALUES (?, ?)');
                     $ins->execute([$name, $code]);
                     $stats['inserted']++;
                     $partyId = (int) $pdo->lastInsertId();
@@ -59,15 +59,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ballotLabel = $name;
                 }
 
-                $link = $pdo->prepare('SELECT id FROM election_parties WHERE election_id = ? AND party_id = ? LIMIT 1');
+                $link = $pdo->prepare('SELECT id FROM wpl_election_parties WHERE election_id = ? AND party_id = ? LIMIT 1');
                 $link->execute([$selectedElectionId, $partyId]);
                 $electionPartyId = $link->fetchColumn();
 
                 if ($electionPartyId) {
-                    $updLink = $pdo->prepare('UPDATE election_parties SET ballot_label = ? WHERE id = ?');
+                    $updLink = $pdo->prepare('UPDATE wpl_election_parties SET ballot_label = ? WHERE id = ?');
                     $updLink->execute([$ballotLabel, $electionPartyId]);
                 } else {
-                    $insLink = $pdo->prepare('INSERT INTO election_parties (election_id, party_id, ballot_label) VALUES (?, ?, ?)');
+                    $insLink = $pdo->prepare('INSERT INTO wpl_election_parties (election_id, party_id, ballot_label) VALUES (?, ?, ?)');
                     $insLink->execute([$selectedElectionId, $partyId, $ballotLabel]);
                     $stats['linked']++;
                 }
@@ -78,19 +78,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($ensureParteilos) {
-            $stmt = $pdo->prepare('SELECT id FROM parties WHERE code = ? LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id FROM wpl_parties WHERE code = ? LIMIT 1');
             $stmt->execute(['PARTEILOS']);
             $partyId = $stmt->fetchColumn();
             if (! $partyId) {
-                $ins = $pdo->prepare('INSERT INTO parties (name, code) VALUES (?, ?)');
+                $ins = $pdo->prepare('INSERT INTO wpl_parties (name, code) VALUES (?, ?)');
                 $ins->execute(['Parteilos', 'PARTEILOS']);
                 $partyId = (int) $pdo->lastInsertId();
                 $stats['inserted']++;
             }
-            $link = $pdo->prepare('SELECT id FROM election_parties WHERE election_id = ? AND party_id = ? LIMIT 1');
+            $link = $pdo->prepare('SELECT id FROM wpl_election_parties WHERE election_id = ? AND party_id = ? LIMIT 1');
             $link->execute([$selectedElectionId, $partyId]);
             if (! $link->fetchColumn()) {
-                $insLink = $pdo->prepare('INSERT INTO election_parties (election_id, party_id, ballot_label) VALUES (?, ?, ?)');
+                $insLink = $pdo->prepare('INSERT INTO wpl_election_parties (election_id, party_id, ballot_label) VALUES (?, ?, ?)');
                 $insLink->execute([$selectedElectionId, $partyId, 'Parteilos']);
                 $stats['linked']++;
             }

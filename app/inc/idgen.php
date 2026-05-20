@@ -62,7 +62,7 @@ function generate_candidate_code(\PDO $pdo, string $partyCode, string $fullName)
 	for ($i = 0; $i < 50; $i++) {
 		$code = $prefix . rand_base36_2();
 		
-		$stmt = $pdo->prepare('SELECT 1 FROM election_candidates WHERE candidate_code = ? LIMIT 1');
+		$stmt = $pdo->prepare('SELECT 1 FROM wpl_election_candidates WHERE candidate_code = ? LIMIT 1');
 		$stmt->execute([$code]);
 		if (!$stmt->fetchColumn()) {
 			return $code;

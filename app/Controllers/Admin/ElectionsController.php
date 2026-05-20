@@ -31,22 +31,22 @@ class ElectionsController extends BaseController
 					if ($startDate !== '' && $startIso === null) {
 						throw new \RuntimeException('Ungültiges Datumsformat.');
 					}
-					$stmt = $pdo->prepare('INSERT INTO elections (name, state_code, start_date, active) VALUES (?, ?, ?, ?)');
+					$stmt = $pdo->prepare('INSERT INTO wpl_elections (name, state_code, start_date, active) VALUES (?, ?, ?, ?)');
 					$stmt->execute([$name, $stateCode !== '' ? $stateCode : null, $startIso, $active]);
 					\App\Inc\flash_set('success', 'Wahl angelegt.');
 				} elseif ($action === 'toggle_active') {
 					$id = (int) ($_POST['election_id'] ?? 0);
 					$active = (int) ($_POST['active'] ?? 0);
-					$stmt = $pdo->prepare('UPDATE elections SET active = ? WHERE id = ?');
+					$stmt = $pdo->prepare('UPDATE wpl_elections SET active = ? WHERE id = ?');
 					$stmt->execute([$active ? 1 : 0, $id]);
 					\App\Inc\flash_set('success', 'Status aktualisiert.');
 				} elseif ($action === 'delete') {
 					$id = (int) ($_POST['election_id'] ?? 0);
 					$checks = [
-						'SELECT COUNT(*) FROM districts WHERE election_id = ?',
-						'SELECT COUNT(*) FROM election_parties WHERE election_id = ?',
-						'SELECT COUNT(*) FROM election_candidates WHERE election_id = ?',
-						'SELECT COUNT(*) FROM images WHERE election_id = ?',
+						'SELECT COUNT(*) FROM wpl_districts WHERE election_id = ?',
+						'SELECT COUNT(*) FROM wpl_election_parties WHERE election_id = ?',
+						'SELECT COUNT(*) FROM wpl_election_candidates WHERE election_id = ?',
+						'SELECT COUNT(*) FROM wpl_images WHERE election_id = ?',
 					];
 					foreach ($checks as $sql) {
 						$stmt = $pdo->prepare($sql);
@@ -55,7 +55,7 @@ class ElectionsController extends BaseController
 							throw new \RuntimeException('Wahl kann nicht gelöscht werden, weil noch Referenzen vorhanden sind.');
 						}
 					}
-					$stmt = $pdo->prepare('DELETE FROM elections WHERE id = ?');
+					$stmt = $pdo->prepare('DELETE FROM wpl_elections WHERE id = ?');
 					$stmt->execute([$id]);
 					\App\Inc\flash_set('success', 'Wahl gelöscht.');
 				}
@@ -65,7 +65,7 @@ class ElectionsController extends BaseController
 			\App\Inc\redirect('/admin/elections.php');
 		}
 
-		$elections = $pdo->query('SELECT id, name, state_code, start_date, end_date, active, created_at FROM elections ORDER BY id DESC')->fetchAll();
+		$elections = $pdo->query('SELECT id, name, state_code, start_date, end_date, active, created_at FROM wpl_elections ORDER BY id DESC')->fetchAll();
 		$this->view('admin/elections', ['elections' => $elections]);
 	}
 }

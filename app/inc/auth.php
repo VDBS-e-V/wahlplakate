@@ -15,7 +15,7 @@ function current_user(): ?array
 	}
 	$id = (int) $_SESSION['user_id'];
 	$pdo = db();
-	$stmt = $pdo->prepare('SELECT id, email, role FROM users WHERE id = ?');
+	$stmt = $pdo->prepare('SELECT id, email, role FROM wpl_users WHERE id = ?');
 	$stmt->execute([$id]);
 	$user = $stmt->fetch();
 	return $user ?: null;
@@ -52,7 +52,7 @@ function require_admin(): void
 function login(string $email, string $password): bool
 {
 	$pdo = db();
-	$stmt = $pdo->prepare('SELECT id, email, password_hash, role FROM users WHERE email = ? LIMIT 1');
+	$stmt = $pdo->prepare('SELECT id, email, password_hash, role FROM wpl_users WHERE email = ? LIMIT 1');
 	$stmt->execute([$email]);
 	$row = $stmt->fetch();
 	if (! $row) {
