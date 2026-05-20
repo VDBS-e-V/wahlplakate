@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../inc/env.php';
 require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/util.php';
 
 function output(string $s): void
 {
@@ -23,9 +24,7 @@ if ($exists) {
 	exit;
 }
 
-// generate random password (16 chars, url-safe)
-$bytes = random_bytes(12);
-$password = rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+$password = \App\Inc\random_password(8);
 
 $hash = password_hash($password, PASSWORD_DEFAULT);
 

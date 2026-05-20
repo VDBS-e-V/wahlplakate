@@ -1,37 +1,27 @@
 <?php
 namespace App\Inc;
 
-/**
- * normalize_name(string $s): string
- * Normalize a name: trim, handle umlauts, remove diacritics, keep only letters & spaces
- */
 function normalize_name(string $s): string
 {
-	// Trim and collapse multiple spaces
-	$s = trim(preg_replace('/\s+/', ' ', $s));
-	
-	// Handle German umlauts
-	$s = str_ireplace('ä', 'ae', $s);
-	$s = str_ireplace('ö', 'oe', $s);
-	$s = str_ireplace('ü', 'ue', $s);
-	$s = str_ireplace('ß', 'ss', $s);
-	
-	// Try iconv translit if available
-	if (extension_loaded('iconv')) {
-		$s = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+	$s = trim(preg_replace('/\s+/u', ' ', $s));
+	$s = strtr($s, [
+		'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss',
+		'Ä' => 'Ae', 'Ö' => 'Oe', 'Ü' => 'Ue',
+	]);
+
+	if (function_exists('iconv')) {
+		$transliterated = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+		if ($transliterated !== false) {
+			$s = $transliterated;
+		}
 	}
-	
-	// Keep only letters and spaces
-	$s = preg_replace('/[^a-zA-Z\s]/', '', $s);
-	$s = trim(preg_replace('/\s+/', ' ', $s));
-	
+
+	$s = preg_replace('/[^A-Za-z ]+/', '', $s) ?? '';
+	$s = trim(preg_replace('/\s+/', ' ', $s) ?? '');
+
 	return $s;
 }
 
-/**
- * name_code(string $fullName): string
- * Extract code from full name: "Schmitt, Marga" → "SchmMa"
- */
 function name_code(string $fullName): string
 {
 	$normalized = normalize_name($fullName);
@@ -57,10 +47,6 @@ function name_code(string $fullName): string
 	return $code;
 }
 
-/**
- * rand_base36_2(): string
- * Generate 2 random characters from 0-9A-Z
- */
 function rand_base36_2(): string
 {
 	$chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -69,11 +55,6 @@ function rand_base36_2(): string
 	return $c1 . $c2;
 }
 
-/**
- * generate_candidate_code(PDO $pdo, string $partyCode, string $fullName): string
- * Generate unique candidate_code in format: partyCode-nameCode-randomBase36
- * Throws exception if cannot generate unique code after 50 attempts
- */
 function generate_candidate_code(\PDO $pdo, string $partyCode, string $fullName): string
 {
 	$prefix = $partyCode . '-' . name_code($fullName) . '-';

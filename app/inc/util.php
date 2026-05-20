@@ -30,6 +30,17 @@ function random_token(int $bytes = 32): string
 	return bin2hex(random_bytes($bytes));
 }
 
+function random_password(int $len = 16): string
+{
+	$chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+	$max = strlen($chars) - 1;
+	$password = '';
+	for ($i = 0; $i < $len; $i++) {
+		$password .= $chars[random_int(0, $max)];
+	}
+	return $password;
+}
+
 function base_url(): ?string
 {
 	return env('BASE_URL', null);

@@ -80,6 +80,11 @@
 	</style>
 </head>
 <body>
+<?php foreach (\App\Inc\flash_get_all() as $msg): ?>
+	<div class="flash flash-<?php echo \App\Inc\h($msg['type']); ?>">
+		<?php echo \App\Inc\h($msg['msg']); ?>
+	</div>
+<?php endforeach; ?>
 <div class="container">
 	<div class="nav">
 		<a href="/">Home</a>
@@ -92,8 +97,3 @@
 			<a href="/login.php">Login</a>
 		<?php endif; ?>
 	</div>
-	<?php foreach (\App\Inc\flash_get_all() as $msg): ?>
-		<div class="flash flash-<?php echo \App\Inc\h($msg['type']); ?>">
-			<?php echo \App\Inc\h($msg['msg']); ?>
-		</div>
-	<?php endforeach; ?>

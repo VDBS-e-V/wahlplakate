@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/../../app/inc/auth.php';
+require_once __DIR__ . '/../../app/inc/csrf.php';
 require_once __DIR__ . '/../../app/inc/db.php';
 require_once __DIR__ . '/../../app/inc/csv.php';
-require_once __DIR__ . '/../../app/inc/csrf.php';
 require_once __DIR__ . '/../../app/inc/util.php';
 
 $pageTitle = 'Import Elections';
@@ -16,61 +16,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         $rows = \App\Inc\read_csv_uploaded('csv_file');
-        
+
         if (empty($rows)) {
             throw new \RuntimeException('CSV file is empty');
         }
-        
+
         foreach ($rows as $row) {
             try {
-                $name = $row['election_name'] ?? '';
-                $date = $row['election_date'] ?? '';
-                
-                if (empty($name)) {
+                $name = trim((string) ($row['election_name'] ?? ''));
+                $date = trim((string) ($row['election_date'] ?? ''));
+
+                if ($name === '') {
                     $stats['errors']++;
-                    $stats['messages'][] = 'Skipped: missing election_name';
                     continue;
                 }
-                
-                // Validate date if provided
+
                 $date_val = null;
-                if (!empty($date)) {
+                if ($date !== '') {
                     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
                         $date_val = $date;
                     } else {
                         throw new \RuntimeException('Invalid date format: ' . $date);
                     }
                 }
-                
-                // Upsert: check if exists
+
                 $stmt = $pdo->prepare('SELECT id FROM elections WHERE name = ? LIMIT 1');
                 $stmt->execute([$name]);
                 $existing = $stmt->fetchColumn();
-                
+
                 if ($existing) {
-                    // Update
                     $upd = $pdo->prepare('UPDATE elections SET start_date = ? WHERE name = ?');
                     $upd->execute([$date_val, $name]);
                     $stats['updated']++;
                 } else {
-                    // Insert
                     $ins = $pdo->prepare('INSERT INTO elections (name, start_date) VALUES (?, ?)');
                     $ins->execute([$name, $date_val]);
                     $stats['created']++;
                 }
             } catch (\Throwable $e) {
                 $stats['errors']++;
-                $stats['messages'][] = 'Row error: ' . $e->getMessage();
             }
         }
         
         $summary = "Import complete: {$stats['created']} created, {$stats['updated']} updated, {$stats['errors']} errors";
         \App\Inc\flash_set('success', $summary);
-        \App\Inc\redirect('import_elections.php');
+        \App\Inc\redirect('/admin/import_elections.php');
         
     } catch (\Throwable $e) {
         \App\Inc\flash_set('error', 'Import failed: ' . $e->getMessage());
-        \App\Inc\redirect('import_elections.php');
+        \App\Inc\redirect('/admin/import_elections.php');
     }
 }
 ?>
@@ -85,5 +79,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </label><br>
     <button type="submit">Import</button>
 </form>
-<a href="imports.php">Back to Imports</a>
+<a href="/admin/imports.php">Back to Imports</a>
 <?php require_once __DIR__ . '/../../app/views/footer.php'; ?>

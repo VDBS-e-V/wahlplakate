@@ -12,7 +12,8 @@ $user = \App\Inc\current_user();
 	<ul>
 		<li><a href="upload.php">Upload Image</a></li>
 		<?php if (\App\Inc\is_admin()): ?>
-			<li><a href="admin/imports.php">Admin Imports</a></li>
+			<li><a href="/admin/imports.php">Admin Imports</a></li>
+			<li><a href="/admin/users.php">Admin Users</a></li>
 		<?php endif; ?>
 	</ul>
 <?php else: ?>
