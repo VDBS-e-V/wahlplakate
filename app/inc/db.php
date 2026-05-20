@@ -3,6 +3,32 @@ namespace App\Inc;
 
 require_once __DIR__ . '/env.php';
 
+function ensure_schema(\PDO $pdo): void
+{
+	$check = $pdo->query("SHOW TABLES LIKE 'users'");
+	if ($check && $check->fetchColumn()) {
+		return;
+	}
+
+	$schemaPath = __DIR__ . '/../scripts/migrate.sql';
+	if (! is_file($schemaPath)) {
+		return;
+	}
+
+	$sql = file_get_contents($schemaPath);
+	if ($sql === false) {
+		return;
+	}
+
+	foreach (preg_split('/;\s*(?:\r?\n|$)/', trim($sql)) as $statement) {
+		$statement = trim($statement);
+		if ($statement === '' || str_starts_with($statement, '--')) {
+			continue;
+		}
+		$pdo->exec($statement);
+	}
+}
+
 function db(): \PDO
 {
 	static $pdo = null;
@@ -22,6 +48,7 @@ function db(): \PDO
 		\PDO::ATTR_EMULATE_PREPARES => false,
 	];
 	$pdo = new \PDO($dsn, $user, $pass, $options);
+	ensure_schema($pdo);
 	return $pdo;
 }
 

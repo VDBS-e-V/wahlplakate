@@ -35,3 +35,30 @@ function base_url(): ?string
 	return env('BASE_URL', null);
 }
 
+function flash_set(string $type, string $msg): void
+{
+	if (session_status() !== PHP_SESSION_ACTIVE) {
+		session_start();
+	}
+	if (!isset($_SESSION['flash'])) {
+		$_SESSION['flash'] = [];
+	}
+	$_SESSION['flash'][] = ['type' => $type, 'msg' => $msg];
+}
+
+function flash_get_all(): array
+{
+	if (session_status() !== PHP_SESSION_ACTIVE) {
+		session_start();
+	}
+	$messages = $_SESSION['flash'] ?? [];
+	$_SESSION['flash'] = [];
+	return $messages;
+}
+
+function is_admin(): bool
+{
+	$user = current_user();
+	return $user !== null && ($user['role'] ?? '') === 'admin';
+}
+

@@ -13,8 +13,8 @@ function output(string $s): void
 	}
 }
 
-$email = env('ADMIN_EMAIL', 'admin@vdb.schule');
-$pdo = db();
+$email = \App\Inc\env('ADMIN_EMAIL', 'admin@vdb.schule');
+$pdo = \App\Inc\db();
 $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
 $stmt->execute([$email]);
 $exists = $stmt->fetchColumn();

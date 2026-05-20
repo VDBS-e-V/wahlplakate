@@ -2,7 +2,10 @@
 require_once __DIR__ . '/../app/inc/auth.php';
 require_once __DIR__ . '/../app/inc/db.php';
 require_once __DIR__ . '/../app/inc/image_store.php';
+require_once __DIR__ . '/../app/inc/csrf.php';
+require_once __DIR__ . '/../app/inc/util.php';
 
+$pageTitle = 'Replace Image';
 \App\Inc\require_login();
 $pdo = \App\Inc\db();
 
@@ -32,8 +35,8 @@ if (! $isAdmin && (int)$img['uploaded_by'] !== (int)$user['id']) {
     exit;
 }
 
-$errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    \App\Inc\csrf_verify_or_die();
     try {
         if (! isset($_FILES['image'])) {
             throw new \RuntimeException('No file uploaded');
@@ -55,25 +58,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // delete old file
         \App\Inc\delete_stored_file($img['file_path']);
 
-        header('Location: image.php?id=' . $id);
-        exit;
+        \App\Inc\flash_set('success', 'Image replaced successfully!');
+        \App\Inc\redirect('image.php?id=' . $id);
     } catch (\Throwable $e) {
-        $errors[] = $e->getMessage();
+        \App\Inc\flash_set('error', 'Replace failed: ' . $e->getMessage());
+        \App\Inc\redirect('replace.php?id=' . $id);
     }
 }
 
 ?>
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Replace Image</title></head>
-<body>
+<?php require_once __DIR__ . '/../app/views/header.php'; ?>
 <h1>Replace Image #<?php echo \App\Inc\h((string)$id); ?></h1>
-<?php foreach ($errors as $err): ?>
-  <p style="color:red"><?php echo \App\Inc\h($err); ?></p>
-<?php endforeach; ?>
 <form method="post" enctype="multipart/form-data">
+  <?php echo \App\Inc\csrf_input(); ?>
   <label>New Image: <input type="file" name="image" accept="image/jpeg,image/png" required></label><br>
   <button type="submit">Replace</button>
 </form>
-</body>
-</html>
+<?php require_once __DIR__ . '/../app/views/footer.php'; ?>

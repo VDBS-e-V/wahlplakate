@@ -3,10 +3,11 @@ require_once __DIR__ . '/../app/inc/auth.php';
 require_once __DIR__ . '/../app/inc/db.php';
 require_once __DIR__ . '/../app/inc/image_store.php';
 require_once __DIR__ . '/../app/inc/util.php';
+require_once __DIR__ . '/../app/inc/csrf.php';
 
+$pageTitle = 'Upload Image';
 \App\Inc\require_login();
 $pdo = \App\Inc\db();
-$errors = [];
 
 // fetch dropdown data
 $elections = $pdo->query('SELECT id, name FROM elections ORDER BY id DESC')->fetchAll();
@@ -15,6 +16,7 @@ $parties = $pdo->query('SELECT id, name, code FROM parties ORDER BY name')->fetc
 $candidates = $pdo->query('SELECT id, name, party_id FROM candidates ORDER BY name')->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    \App\Inc\csrf_verify_or_die();
     try {
         if (empty($_POST['election_id']) || empty($_POST['locality_id']) || empty($_POST['party_id'])) {
             throw new \RuntimeException('Missing required fields');
@@ -67,24 +69,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ins->execute([$party_id, $candidate_id, $stored['file_path'], $_FILES['image']['name'], $validated['mime'], $validated['size_bytes'], $validated['sha256'], $_SESSION['user_id'] ?? null, $election_id, $locality_id]);
         $id = $pdo->lastInsertId();
 
-        header('Location: image.php?id=' . $id);
-        exit;
+        \App\Inc\flash_set('success', 'Image uploaded successfully! ID: ' . $id);
+        \App\Inc\redirect('image.php?id=' . $id);
 
     } catch (\Throwable $e) {
-        $errors[] = $e->getMessage();
+        \App\Inc\flash_set('error', 'Upload failed: ' . $e->getMessage());
+        \App\Inc\redirect('upload.php');
     }
 }
 
 ?>
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Upload</title></head>
-<body>
+<?php require_once __DIR__ . '/../app/views/header.php'; ?>
 <h1>Upload Image</h1>
-<?php foreach ($errors as $err): ?>
-  <p style="color:red"><?php echo \App\Inc\h($err); ?></p>
-<?php endforeach; ?>
 <form method="post" enctype="multipart/form-data">
+  <?php echo \App\Inc\csrf_input(); ?>
   <label>Image: <input type="file" name="image" accept="image/jpeg,image/png" required></label><br>
   <label>Election:
     <select name="election_id" required>
@@ -120,5 +118,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </label><br>
   <button type="submit">Upload</button>
 </form>
-</body>
-</html>
+<?php require_once __DIR__ . '/../app/views/footer.php'; ?>
