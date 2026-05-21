@@ -21,7 +21,7 @@ function ensure_schema(\PDO $pdo): void
 		return;
 	}
 
-	$schemaPath = __DIR__ . '/../scripts/migrate.sql';
+	$schemaPath = __DIR__ . '/../../scripts/migrate.sql';
 	if (! is_file($schemaPath)) {
 		return;
 	}
@@ -41,7 +41,7 @@ function ensure_wahl_scoped_schema(\PDO $pdo): void
 		return;
 	}
 
-	$schemaPath = __DIR__ . '/../scripts/migrate_wahl_scoped.sql';
+	$schemaPath = __DIR__ . '/../../scripts/migrate_wahl_scoped.sql';
 	if (! is_file($schemaPath)) {
 		return;
 	}
